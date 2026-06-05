@@ -69,15 +69,20 @@ KWin.TabBoxSwitcher {
                         source: model.icon
                         // active: index == icons.currentIndex
 
+                        // macOS-style: select on mouse hover
+                        HoverHandler {
+                            onHoveredChanged: {
+                                if (hovered) {
+                                    icons.currentIndex = index;
+                                }
+                            }
+                        }
+
+                        // Click to activate directly
                         TapHandler {
                             onSingleTapped: {
-                                if (index === icons.currentIndex) {
-                                    icons.model.activate(index);
-                                    return;
-                                }
-                                icons.currentIndex = index;
+                                icons.model.activate(index);
                             }
-                            onDoubleTapped: icons.model.activate(index)
                         }
                     }
 
