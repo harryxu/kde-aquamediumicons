@@ -10,7 +10,6 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami 2.20 as Kirigami
-import org.kde.ksvg 1.0 as KSvg
 import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.kwin 3.0 as KWin
 
@@ -24,73 +23,86 @@ KWin.TabBoxSwitcher {
         visible: tabBox.visible
         flags: Qt.X11BypassWindowManagerHint
         backgroundHints: PlasmaCore.Types.NoBackground
-        x: tabBox.screenGeometry.x + tabBox.screenGeometry.width * 0.5 - dialogMainItem.width * 0.5
-        y: tabBox.screenGeometry.y + tabBox.screenGeometry.height * 0.5 - dialogMainItem.height * 0.8
+        x: tabBox.screenGeometry.x + tabBox.screenGeometry.width * 0.5 - bgRect.width * 0.5
+        y: tabBox.screenGeometry.y + tabBox.screenGeometry.height * 0.5 - bgRect.height * 0.8
 
-        mainItem: Rectangle {
-            id: dialogBackground
-            color: "transparent"
+        mainItem: Item {
+            id: bgRect
 
-            readonly property int contentWidth: Math.min(Math.max(icons.delegateWidth, icons.implicitWidth), tabBox.screenGeometry.width * 0.9) + Kirigami.Units.largeSpacing * 2
-            readonly property int contentHeight: icons.delegateHeight + Kirigami.Units.largeSpacing * 2
+            readonly property int hPadding: Kirigami.Units.largeSpacing * 2
+            readonly property int vPadding: Kirigami.Units.largeSpacing * 2
+            readonly property int innerWidth: Math.min(
+                Math.max(icons.delegateWidth, icons.implicitWidth),
+                tabBox.screenGeometry.width * 0.9
+            )
 
-            width: contentWidth
-            height: contentHeight
+            width: innerWidth + hPadding * 2
+            height: icons.delegateHeight + vPadding * 2
 
             Rectangle {
                 anchors.fill: parent
-                color: Qt.rgba(1, 1, 1, 0.75)
-                radius: Kirigami.Units.largeSpacing * 3
+                color: Qt.rgba(0.16, 0.16, 0.16, 0.7)
+                radius: 20
                 border.width: 0
-
-                layer.enabled: true
-                layer.effect: null
             }
 
             ColumnLayout {
                 id: dialogMainItem
-                spacing: Kirigami.Units.smallSpacing * 2
-                anchors.fill: parent
-
-                width: dialogBackground.contentWidth
-                height: dialogBackground.contentHeight
+                spacing: 0
+                anchors {
+                    fill: parent
+                    leftMargin: bgRect.hPadding
+                    rightMargin: bgRect.hPadding
+                    topMargin: bgRect.vPadding
+                    bottomMargin: bgRect.vPadding
+                }
 
                 ListView {
                     id: icons
 
                     readonly property int iconSize: Kirigami.Units.iconSizes.huge * 1.5
-                    readonly property int delegateWidth: iconSize +  Kirigami.Units.largeSpacing * 4
+                    // Extra horizontal padding per item so icons breathe
+                    readonly property int delegateWidth: iconSize + Kirigami.Units.largeSpacing * 4
+                    // Extra vertical room for label below
                     readonly property int delegateHeight: iconSize + Kirigami.Units.largeSpacing * 4
 
                     Layout.alignment: Qt.AlignHCenter
                     Layout.maximumWidth: tabBox.screenGeometry.width * 0.9
 
                     implicitWidth: contentWidth
-                    implicitHeight: delegateWidth
+                    implicitHeight: delegateHeight
 
                     focus: true
                     orientation: ListView.Horizontal
 
                     model: tabBox.model
-                    delegate: Item {
 
-                        width: icons.delegateHeight
-                        height: icons.delegateWidth
+                    delegate: Item {
+                        width: icons.delegateWidth
+                        height: icons.delegateHeight
+
+                        // macOS-style selection highlight: rounded rect behind the icon
+                        Rectangle {
+                            id: selectionRect
+                            anchors.centerIn: parent
+                            width: icons.iconSize + Kirigami.Units.largeSpacing * 2
+                            height: icons.iconSize + Kirigami.Units.largeSpacing * 2
+                            radius: 14
+                            color: Qt.rgba(1, 1, 1, 0.18)
+                            visible: index === icons.currentIndex
+                        }
 
                         Kirigami.Icon {
-                            property string caption: model.caption
-
                             anchors {
                                 horizontalCenter: parent.horizontalCenter
                                 top: parent.top
-                                topMargin: Kirigami.Units.smallSpacing * 2
+                                topMargin: Kirigami.Units.largeSpacing
                             }
 
-                            width:  icons.iconSize // delegateHeight
-                            height: icons.iconSize // delegateWidth
+                            width: icons.iconSize
+                            height: icons.iconSize
 
                             source: model.icon
-                            // active: index == icons.currentIndex
 
                             // macOS-style: select on mouse hover
                             HoverHandler {
@@ -114,29 +126,26 @@ KWin.TabBoxSwitcher {
                             width: parent.width - Kirigami.Units.smallSpacing * 2
                             text: {
                                 var program = (model.caption).split('—')[1]
-                                return (program) ? program : (model.caption).split('-').pop()
+                                return (program) ? program.trim() : (model.caption).split('-').pop().trim()
                             }
                             height: paintedHeight
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             elide: Text.ElideRight
-                            font.weight: icons.currentIndex === index ? Font.Bold : Font.Normal
+                            // White text, bolder when selected — like macOS
+                            color: "white"
+                            font.weight: icons.currentIndex === index ? Font.Medium : Font.Normal
+                            font.pixelSize: Kirigami.Units.gridUnit * 0.75
                             anchors {
                                 horizontalCenter: parent.horizontalCenter
                                 bottom: parent.bottom
                                 bottomMargin: Kirigami.Units.smallSpacing
                             }
                         }
-
                     }
 
-                    highlight: KSvg.FrameSvgItem {
-                        id: highlightItem
-                        imagePath: "widgets/viewitem"
-                        prefix: "hover"
-                        width: icons.iconSize + margins.left + margins.right
-                        height: icons.iconSize + margins.top + margins.bottom
-                    }
+                    // Remove the Plasma SVG highlight — we use our own Rectangle above
+                    highlight: Item {}
 
                     highlightMoveDuration: 0
                     highlightResizeDuration: 0
