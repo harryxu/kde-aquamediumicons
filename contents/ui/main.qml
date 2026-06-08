@@ -23,122 +23,146 @@ KWin.TabBoxSwitcher {
         location: PlasmaCore.Types.Floating
         visible: tabBox.visible
         flags: Qt.X11BypassWindowManagerHint
+        backgroundHints: PlasmaCore.Types.NoBackground
         x: tabBox.screenGeometry.x + tabBox.screenGeometry.width * 0.5 - dialogMainItem.width * 0.5
         y: tabBox.screenGeometry.y + tabBox.screenGeometry.height * 0.5 - dialogMainItem.height * 0.8
 
-        mainItem: ColumnLayout {
-            id: dialogMainItem
-            spacing: Kirigami.Units.smallSpacing * 2
+        mainItem: Rectangle {
+            id: dialogBackground
+            color: "transparent"
 
-            width: Math.min(Math.max(icons.delegateWidth, icons.implicitWidth), tabBox.screenGeometry.width * 0.9) + Kirigami.Units.largeSpacing * 2
-            height: icons.delegateHeight + Kirigami.Units.largeSpacing * 2
-            ListView {
-                id: icons
+            readonly property int contentWidth: Math.min(Math.max(icons.delegateWidth, icons.implicitWidth), tabBox.screenGeometry.width * 0.9) + Kirigami.Units.largeSpacing * 2
+            readonly property int contentHeight: icons.delegateHeight + Kirigami.Units.largeSpacing * 2
 
-                readonly property int iconSize: Kirigami.Units.iconSizes.huge * 1.5
-                readonly property int delegateWidth: iconSize +  Kirigami.Units.largeSpacing * 4
-                readonly property int delegateHeight: iconSize + Kirigami.Units.largeSpacing * 4
+            width: contentWidth
+            height: contentHeight
 
-                Layout.alignment: Qt.AlignHCenter
-                Layout.maximumWidth: tabBox.screenGeometry.width * 0.9
+            Rectangle {
+                anchors.fill: parent
+                color: Qt.rgba(1, 1, 1, 0.75)
+                radius: Kirigami.Units.largeSpacing * 3
+                border.width: 0
 
-                implicitWidth: contentWidth
-                implicitHeight: delegateWidth
+                layer.enabled: true
+                layer.effect: null
+            }
 
-                focus: true
-                orientation: ListView.Horizontal
+            ColumnLayout {
+                id: dialogMainItem
+                spacing: Kirigami.Units.smallSpacing * 2
+                anchors.fill: parent
 
-                model: tabBox.model
-                delegate: Item{
+                width: dialogBackground.contentWidth
+                height: dialogBackground.contentHeight
 
-                    width: icons.delegateHeight
-                    height: icons.delegateWidth
+                ListView {
+                    id: icons
 
-                    Kirigami.Icon {
-                        property string caption: model.caption
+                    readonly property int iconSize: Kirigami.Units.iconSizes.huge * 1.5
+                    readonly property int delegateWidth: iconSize +  Kirigami.Units.largeSpacing * 4
+                    readonly property int delegateHeight: iconSize + Kirigami.Units.largeSpacing * 4
 
-                        anchors{
-                            horizontalCenter: parent.horizontalCenter
-                            top: parent.top
-                            topMargin: Kirigami.Units.smallSpacing * 2
-                        }
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.maximumWidth: tabBox.screenGeometry.width * 0.9
 
-                        width:  icons.iconSize // delegateHeight
-                        height: icons.iconSize // delegateWidth
+                    implicitWidth: contentWidth
+                    implicitHeight: delegateWidth
 
-                        source: model.icon
-                        // active: index == icons.currentIndex
+                    focus: true
+                    orientation: ListView.Horizontal
 
-                        // macOS-style: select on mouse hover
-                        HoverHandler {
-                            onHoveredChanged: {
-                                if (hovered) {
-                                    icons.currentIndex = index;
+                    model: tabBox.model
+                    delegate: Item {
+
+                        width: icons.delegateHeight
+                        height: icons.delegateWidth
+
+                        Kirigami.Icon {
+                            property string caption: model.caption
+
+                            anchors {
+                                horizontalCenter: parent.horizontalCenter
+                                top: parent.top
+                                topMargin: Kirigami.Units.smallSpacing * 2
+                            }
+
+                            width:  icons.iconSize // delegateHeight
+                            height: icons.iconSize // delegateWidth
+
+                            source: model.icon
+                            // active: index == icons.currentIndex
+
+                            // macOS-style: select on mouse hover
+                            HoverHandler {
+                                onHoveredChanged: {
+                                    if (hovered) {
+                                        icons.currentIndex = index;
+                                    }
+                                }
+                            }
+
+                            // Click to activate directly
+                            TapHandler {
+                                onSingleTapped: {
+                                    icons.model.activate(index);
                                 }
                             }
                         }
 
-                        // Click to activate directly
-                        TapHandler {
-                            onSingleTapped: {
-                                icons.model.activate(index);
+                        PlasmaComponents3.Label {
+                            id: textItem
+                            width: parent.width - Kirigami.Units.smallSpacing * 2
+                            text: {
+                                var program = (model.caption).split('—')[1]
+                                return (program) ? program : (model.caption).split('-').pop()
+                            }
+                            height: paintedHeight
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                            font.weight: icons.currentIndex === index ? Font.Bold : Font.Normal
+                            anchors {
+                                horizontalCenter: parent.horizontalCenter
+                                bottom: parent.bottom
+                                bottomMargin: Kirigami.Units.smallSpacing
                             }
                         }
+
                     }
 
-                    PlasmaComponents3.Label {
-                        id: textItem
-                        width: parent.width - Kirigami.Units.smallSpacing*2
-                        text: {
-                            var program = (model.caption).split('—')[1]
-                            return (program) ? program : (model.caption).split('-').pop()
-                        }
-                        height: paintedHeight
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        elide: Text.ElideRight
-                        font.weight: icons.currentIndex === index ? Font.Bold : Font.Normal
-                        anchors{
-                            horizontalCenter: parent.horizontalCenter
-                            bottom: parent.bottom
-                            bottomMargin: Kirigami.Units.smallSpacing
-                        }
+                    highlight: KSvg.FrameSvgItem {
+                        id: highlightItem
+                        imagePath: "widgets/viewitem"
+                        prefix: "hover"
+                        width: icons.iconSize + margins.left + margins.right
+                        height: icons.iconSize + margins.top + margins.bottom
                     }
 
+                    highlightMoveDuration: 0
+                    highlightResizeDuration: 0
+                    boundsBehavior: Flickable.StopAtBounds
                 }
 
-                highlight: KSvg.FrameSvgItem {
-                    id: highlightItem
-                    imagePath: "widgets/viewitem"
-                    prefix: "hover"
-                    width: icons.iconSize + margins.left + margins.right
-                    height: icons.iconSize + margins.top + margins.bottom
+                Connections {
+                    target: tabBox
+                    function onCurrentIndexChanged() {
+                        icons.currentIndex = tabBox.currentIndex;
+                    }
                 }
 
-                highlightMoveDuration: 0
-                highlightResizeDuration: 0
-                boundsBehavior: Flickable.StopAtBounds
+                /*
+                * Key navigation on outer item for two reasons:
+                * @li we have to emit the change signal
+                * @li on multiple invocation it does not work on the list view. Focus seems to be lost.
+                **/
+                Keys.onPressed: event => {
+                    if (event.key == Qt.Key_Left) {
+                        icons.decrementCurrentIndex();
+                    } else if (event.key == Qt.Key_Right) {
+                        icons.incrementCurrentIndex();
+                    }
+                }
             }
-
-            Connections {
-                target: tabBox
-                function onCurrentIndexChanged() {
-                    icons.currentIndex = tabBox.currentIndex;
-                }
-            }
-
-            /*
-            * Key navigation on outer item for two reasons:
-            * @li we have to emit the change signal
-            * @li on multiple invocation it does not work on the list view. Focus seems to be lost.
-            **/
-            Keys.onPressed: event => {
-                                if (event.key == Qt.Key_Left) {
-                                    icons.decrementCurrentIndex();
-                                } else if (event.key == Qt.Key_Right) {
-                                    icons.incrementCurrentIndex();
-                                }
-                            }
         }
     }
 }
