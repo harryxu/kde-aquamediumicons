@@ -8,6 +8,7 @@
  */
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
+
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami 2.20 as Kirigami
 import org.kde.plasma.components 3.0 as PlasmaComponents3
@@ -39,13 +40,15 @@ KWin.TabBoxSwitcher {
             width: innerWidth + hPadding * 2
             height: icons.delegateHeight + vPadding * 2
 
+            // ── Background: dark semi-transparent panel ───────────────────
             Rectangle {
                 anchors.fill: parent
-                color: Qt.rgba(0.16, 0.16, 0.16, 0.7)
+                color: Qt.rgba(0.15, 0.15, 0.15, 0.88)
                 radius: 20
                 border.width: 0
             }
 
+            // ── Content ───────────────────────────────────────────────────
             ColumnLayout {
                 id: dialogMainItem
                 spacing: 0
@@ -61,10 +64,14 @@ KWin.TabBoxSwitcher {
                     id: icons
 
                     readonly property int iconSize: Kirigami.Units.iconSizes.huge * 1.5
-                    // Extra horizontal padding per item so icons breathe
+
+                    // Horizontal space per item
                     readonly property int delegateWidth: iconSize + Kirigami.Units.largeSpacing * 4
-                    // Extra vertical room for label below
-                    readonly property int delegateHeight: iconSize + Kirigami.Units.largeSpacing * 4
+
+                    // Vertical space: icon + gap + label
+                    //   largeSpacing (top pad) + iconSize + largeSpacing*2 (gap) + labelHeight + largeSpacing (bottom pad)
+                    //   Using largeSpacing*5 gives comfortable room
+                    readonly property int delegateHeight: iconSize + Kirigami.Units.largeSpacing * 5
 
                     Layout.alignment: Qt.AlignHCenter
                     Layout.maximumWidth: tabBox.screenGeometry.width * 0.9
@@ -78,21 +85,28 @@ KWin.TabBoxSwitcher {
                     model: tabBox.model
 
                     delegate: Item {
+                        id: delegateItem
                         width: icons.delegateWidth
                         height: icons.delegateHeight
 
-                        // macOS-style selection highlight: rounded rect behind the icon
+                        // ── Selection highlight ───────────────────────────
+                        // Strictly wraps the icon only — 3px padding on each side.
+                        // Icon sits at y=largeSpacing, so highlight top = largeSpacing-3.
+                        // Highlight bottom = largeSpacing + iconSize + 3, well above the label.
                         Rectangle {
                             id: selectionRect
-                            anchors.centerIn: parent
-                            width: icons.iconSize + Kirigami.Units.largeSpacing * 2
-                            height: icons.iconSize + Kirigami.Units.largeSpacing * 2
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            y: Kirigami.Units.largeSpacing - 3
+                            width: icons.iconSize + 6
+                            height: icons.iconSize + 6
                             radius: 14
                             color: Qt.rgba(1, 1, 1, 0.18)
                             visible: index === icons.currentIndex
                         }
 
+                        // ── App icon ─────────────────────────────────────
                         Kirigami.Icon {
+                            id: appIcon
                             anchors {
                                 horizontalCenter: parent.horizontalCenter
                                 top: parent.top
@@ -121,6 +135,10 @@ KWin.TabBoxSwitcher {
                             }
                         }
 
+                        // ── App label ────────────────────────────────────
+                        // Anchored to bottom, with increased top gap from the icon.
+                        // The gap between icon bottom and label top is:
+                        //   delegateHeight - largeSpacing - iconSize - largeSpacing*2 - labelHeight
                         PlasmaComponents3.Label {
                             id: textItem
                             width: parent.width - Kirigami.Units.smallSpacing * 2
@@ -132,19 +150,19 @@ KWin.TabBoxSwitcher {
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             elide: Text.ElideRight
-                            // White text, bolder when selected — like macOS
                             color: "white"
                             font.weight: icons.currentIndex === index ? Font.Medium : Font.Normal
                             font.pixelSize: Kirigami.Units.gridUnit * 0.75
                             anchors {
                                 horizontalCenter: parent.horizontalCenter
+                                // Increased bottom margin keeps text well below the highlight
                                 bottom: parent.bottom
-                                bottomMargin: Kirigami.Units.smallSpacing
+                                bottomMargin: Kirigami.Units.largeSpacing
                             }
                         }
                     }
 
-                    // Remove the Plasma SVG highlight — we use our own Rectangle above
+                    // No Plasma SVG highlight — using our own Rectangle
                     highlight: Item {}
 
                     highlightMoveDuration: 0
