@@ -22,7 +22,7 @@ KWin.TabBoxSwitcher {
     PlasmaCore.Dialog {
         location: PlasmaCore.Types.Floating
         visible: tabBox.visible
-        flags: Qt.X11BypassWindowManagerHint
+        flags: Qt.Popup | Qt.X11BypassWindowManagerHint
         backgroundHints: PlasmaCore.Types.NoBackground
         x: tabBox.screenGeometry.x + tabBox.screenGeometry.width * 0.5 - bgRect.width * 0.5
         y: tabBox.screenGeometry.y + tabBox.screenGeometry.height * 0.5 - bgRect.height * 0.8
