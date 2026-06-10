@@ -1,6 +1,6 @@
 # Aqua Medium Icons
 
-A clone of the macOS window switcher layout for KWin
+A MacOS style window switcher (TabBox) theme for KDE Plasma, featuring a clean horizontal layout with large application icons and hover-to-select support.
 
 ![preview](images/layout.png)
 
